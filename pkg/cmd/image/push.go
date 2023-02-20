@@ -35,6 +35,7 @@ import (
 	"github.com/containerd/nerdctl/pkg/imgutil/dockerconfigresolver"
 	"github.com/containerd/nerdctl/pkg/imgutil/push"
 	"github.com/containerd/nerdctl/pkg/ipfs"
+	"github.com/containerd/nerdctl/pkg/notationutil"
 	"github.com/containerd/nerdctl/pkg/platformutil"
 	"github.com/containerd/nerdctl/pkg/referenceutil"
 	"github.com/containerd/stargz-snapshotter/estargz"
@@ -156,6 +157,16 @@ func Push(ctx context.Context, client *containerd.Client, rawRef string, options
 		}
 
 		err = cosignutil.SignCosign(rawRef, options.CosignKey)
+		if err != nil {
+			return err
+		}
+	case "notation":
+
+		if !options.GOptions.Experimental {
+			return fmt.Errorf("notation only work with enable experimental feature")
+		}
+
+		err = notationutil.SignNotation(rawRef, options.NotationKeyName)
 		if err != nil {
 			return err
 		}

@@ -44,6 +44,8 @@ ARG KUBO_VERSION=v0.18.1
 ARG TINI_VERSION=v0.19.0
 # Extra deps: Debug
 ARG BUILDG_VERSION=v0.4.1
+# Extra deps: Notation
+ARG NOTATION_VERSION=1.0.0-rc.2
 
 # Test deps
 ARG GO_VERSION=1.20
@@ -283,6 +285,11 @@ VOLUME /tmp
 ENV CGO_ENABLED=0
 # copy cosign binary for integration test
 COPY --from=gcr.io/projectsigstore/cosign:v1.3.1@sha256:3cd9b3a866579dc2e0cf2fdea547f4c9a27139276cc373165c26842bc594b8bd /ko-app/cosign /usr/local/bin/cosign
+# install notation binary for integration test
+ARG NOTATION_VERSION
+RUN echo "https://github.com/notaryproject/notation/releases/download/${NOTATION_VERSION}/notation_${NOTATION_VERSION}_linux_${TARGETARCH}.tar.gz"
+RUN curl -L -o notation.tar.gz "https://github.com/notaryproject/notation/releases/download/v${NOTATION_VERSION}/notation_${NOTATION_VERSION}_linux_${TARGETARCH}.tar.gz" && \
+  tar xf notation.tar.gz -C /usr/bin/ notation
 # enable offline ipfs for integration test
 COPY ./Dockerfile.d/test-integration-etc_containerd-stargz-grpc_config.toml /etc/containerd-stargz-grpc/config.toml
 COPY ./Dockerfile.d/test-integration-ipfs-offline.service /usr/local/lib/systemd/system/

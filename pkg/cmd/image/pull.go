@@ -28,6 +28,7 @@ import (
 	"github.com/containerd/nerdctl/pkg/cosignutil"
 	"github.com/containerd/nerdctl/pkg/imgutil"
 	"github.com/containerd/nerdctl/pkg/ipfs"
+	"github.com/containerd/nerdctl/pkg/notationutil"
 	"github.com/containerd/nerdctl/pkg/platformutil"
 	"github.com/containerd/nerdctl/pkg/referenceutil"
 	"github.com/containerd/nerdctl/pkg/strutil"
@@ -96,6 +97,17 @@ func EnsureImage(ctx context.Context, client *containerd.Client, rawRef string, 
 		}
 
 		ref, err = cosignutil.VerifyCosign(ctx, rawRef, options.CosignKey, options.GOptions.HostsDir)
+		if err != nil {
+			return nil, err
+		}
+	case "notation":
+		experimental := options.GOptions.Experimental
+
+		if !experimental {
+			return nil, fmt.Errorf("notation only work with enable experimental feature")
+		}
+
+		ref, err = notationutil.VerifyNotation(ctx, rawRef, options.GOptions.HostsDir)
 		if err != nil {
 			return nil, err
 		}
