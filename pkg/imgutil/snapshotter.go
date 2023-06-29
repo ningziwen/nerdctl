@@ -19,6 +19,7 @@ package imgutil
 import (
 	"strings"
 
+	socisource "github.com/awslabs/soci-snapshotter/fs/source"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/images"
 	ctdsnapshotters "github.com/containerd/containerd/pkg/snapshotters"
@@ -31,6 +32,7 @@ const (
 	snapshotterNameOverlaybd = "overlaybd"
 	snapshotterNameStargz    = "stargz"
 	snapshotterNameNydus     = "nydus"
+	snapshotterNameSoci      = "soci"
 
 	// prefetch size for stargz
 	prefetchSize = 10 * 1024 * 1024
@@ -41,6 +43,7 @@ var builtinRemoteSnapshotterOpts = map[string]snapshotterOpts{
 	snapshotterNameOverlaybd: &remoteSnapshotterOpts{snapshotter: "overlaybd"},
 	snapshotterNameStargz:    &remoteSnapshotterOpts{snapshotter: "stargz", extraLabels: stargzExtraLabels},
 	snapshotterNameNydus:     &remoteSnapshotterOpts{snapshotter: "nydus"},
+	snapshotterNameSoci:      &remoteSnapshotterOpts{snapshotter: "soci"},
 }
 
 // snapshotterOpts is used to update pull config
@@ -48,6 +51,7 @@ var builtinRemoteSnapshotterOpts = map[string]snapshotterOpts{
 type snapshotterOpts interface {
 	apply(config *pull.Config, ref string)
 	isRemote() bool
+	name() string
 }
 
 // getSnapshotterOpts get snapshotter opts by fuzzy matching of the snapshotter name
@@ -75,8 +79,17 @@ func (rs *remoteSnapshotterOpts) isRemote() bool {
 	return true
 }
 
+func (rs *remoteSnapshotterOpts) name() string {
+	return rs.snapshotter
+}
+
 func (rs *remoteSnapshotterOpts) apply(config *pull.Config, ref string) {
 	h := ctdsnapshotters.AppendInfoHandlerWrapper(ref)
+	if rs.snapshotter == "soci" {
+		h = socisource.AppendDefaultLabelsHandlerWrapper(
+			"", ctdsnapshotters.AppendInfoHandlerWrapper(ref))
+	}
+
 	if rs.extraLabels != nil {
 		h = rs.extraLabels(h)
 	}
@@ -102,6 +115,11 @@ func (dsn *defaultSnapshotterOpts) apply(config *pull.Config, _ref string) {
 // defaultSnapshotterOpts is not a remote snapshotter
 func (dsn *defaultSnapshotterOpts) isRemote() bool {
 	return false
+}
+
+func (dsn *defaultSnapshotterOpts) name() string {
+	logrus.Info("Default snapshotter!!!")
+	return dsn.snapshotter
 }
 
 func stargzExtraLabels(f func(images.Handler) images.Handler) func(images.Handler) images.Handler {

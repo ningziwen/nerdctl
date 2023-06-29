@@ -235,6 +235,12 @@ func PullImage(ctx context.Context, client *containerd.Client, stdout, stderr io
 		logrus.Debugf("The image will not be unpacked. Platforms=%v.", ocispecPlatforms)
 	}
 
+	logrus.Info(fmt.Sprintf("nerdctl snapshotter is %s", snOpt.name()))
+
+	if snOpt.name() == "soci" {
+		config.RemoteOpts = append(config.RemoteOpts, containerd.WithPullUnpack)
+	}
+
 	containerdImage, err = pull.Pull(ctx, client, ref, config)
 	if err != nil {
 		return nil, err
